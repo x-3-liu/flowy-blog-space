@@ -116,7 +116,17 @@ export default {
 				'height': 'height',
 				'spacing': 'margin, padding',
 			},
+			typography: {
+				DEFAULT: {
+					css: {
+						maxWidth: 'none',
+					},
+				},
+			},
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/typography"),
+	],
 } satisfies Config;
