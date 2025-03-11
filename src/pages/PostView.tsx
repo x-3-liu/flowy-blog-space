@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPostBySlug, fetchComments, addComment, submitAbuseReport } from '@/utils/supabasePostUtils';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, User, Flag } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Flag, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math'; // Import remark-math
-import rehypeKatex from 'rehype-katex'; // Import rehype-katex
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { motion } from 'framer-motion';
 import {
   Dialog,
@@ -25,10 +25,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/components/ui/use-toast';
 import remarkBreaks from 'remark-breaks';
-import remarkEmoji from 'remark-emoji';  // Import remark-emoji
-import rehypePrism from 'rehype-prism-plus'; // Import rehype-prism-plus
-import 'katex/dist/katex.min.css'; //  KaTeX CSS
-// import 'prismjs/themes/prism-tomorrow.css'; //  Prism.js theme (choose a theme you like)
+import remarkEmoji from 'remark-emoji';
+import rehypePrism from 'rehype-prism-plus';
+import 'katex/dist/katex.min.css';
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PostView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -42,6 +43,8 @@ const PostView = () => {
 
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentContent, setCommentContent] = useState('');
+
+  const [copyStates, setCopyStates] = useState<{ [key: string]: boolean }>({});
 
   const {
     data: post,
@@ -145,6 +148,85 @@ const PostView = () => {
       details: reportDetails
     });
   };
+
+  const handleCopyClick = useCallback((text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyStates(prev => ({ ...prev, [id]: true }));
+      setTimeout(() => {
+        setCopyStates(prev => ({ ...prev, [id]: false }));
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      toast({
+        title: "Failed to copy",
+        description: "There was a problem copying the text.",
+        variant: "destructive",
+      });
+    });
+  }, [toast]);
+
+    const components = {
+        code: ({ node, inline, className, children, ...props }: any) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const lang = match && match[1] ? match[1] : '';
+            const codeId = `code-${Math.random().toString(36).substring(7)}`;
+            const hasCopied = copyStates[codeId];
+
+            if (!inline) {
+                return (
+                    <div className="relative bg-white/80 dark:bg-black/90 rounded-md my-4 overflow-hidden font-mono text-sm">
+                        <div className="flex items-center justify-end absolute top-0 right-0 p-2">
+                            {lang && (
+                                <span className="text-brand-secondary text-xs mr-2 font-mono uppercase">{lang}</span>
+                            )}
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleCopyClick(String(children).replace(/\n$/, ''), codeId)}
+                                            className="text-brand-secondary hover:text-brand"
+                                        >
+                                            {hasCopied ? (
+                                                <span className="text-xs">Copied!</span>
+                                            ) : (
+                                                <Copy className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{hasCopied ? "Copied!" : "Copy to Clipboard"}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        {/* Directly modify the existing pre tag */}
+                        <pre
+                            {...props} // Spread all props from rehype-prism-plus
+                            className={cn(
+                                "p-4 mt-0 rounded-md",
+                                className,
+                                "bg-transparent !important", // Override background
+                                "text-foreground !important"  // Override text color
+                            )}
+                        >
+                            <code className={className}>{children}</code>
+                        </pre>
+                    </div>
+                );
+            }
+
+            // Inline code (no change needed)
+            return (
+                <code className={className} {...props}>
+                    {children}
+                </code>
+            );
+        },
+    };
+
+
 
   if (isPostLoading) {
     return (
@@ -250,22 +332,23 @@ const PostView = () => {
           >
             <div className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-8 rounded-2xl">
               <ReactMarkdown
-                  className="markdown prose-lg max-w-none text-foreground font-serif"
-                  remarkPlugins={[
-                      remarkGfm,
-                      remarkBreaks,
-                      remarkMath,
-                      remarkEmoji,
-                  ]}
-                  rehypePlugins={[
-                      [rehypeKatex, { /* ... */ }],
-                      [rehypePrism, {
-                          theme: 'tomorrow',
-                          ignoreMissing: true
-                      }],
-                  ]}
+                className="markdown prose-lg max-w-none text-foreground font-serif"
+                remarkPlugins={[
+                  remarkGfm,
+                  remarkBreaks,
+                  remarkMath,
+                  remarkEmoji,
+                ]}
+                rehypePlugins={[
+                  [rehypeKatex, { /* ... */ }],
+                  [rehypePrism, {
+                    theme: 'tomorrow',
+                    ignoreMissing: true
+                  }],
+                ]}
+                components={components}
               >
-                  {post.content}
+                {post.content}
               </ReactMarkdown>
             </div>
           </motion.div>
@@ -281,7 +364,7 @@ const PostView = () => {
                     <div className="h-12 bg-brand-secondary/20 rounded"></div>
                   </div>
                 ) : comments.length === 0 ? (
-                  <p className="text-brand-secondary font-serif">No comments yet. Be the first to share your thoughts!</p>
+                  <p className="text-brand-secondary font-serif">No comments yet.  Be the first to share your thoughts!</p>
                 ) : (
                   comments.map((comment: any) => (
                     <div key={comment.id} className="border-l-2 border-brand-secondary/20 pl-4 py-1">
@@ -293,17 +376,19 @@ const PostView = () => {
                       </div>
                       <ReactMarkdown
                         className="markdown prose-sm max-w-none text-foreground font-serif"
-                        remarkPlugins={[remarkGfm, remarkMath, remarkEmoji, remarkMermaid]}
+                        remarkPlugins={[remarkGfm, remarkMath, remarkEmoji, remarkBreaks]}
                         rehypePlugins={[
-                            [rehypeKatex, {
-                              errorColor: '#cc0000',
-                              onError: (error) => {
-                                console.error('KaTeX error:', error);
-                                return `<span>Error rendering formula</span>`;
-                              }
-                            }],
-                            [rehypePrism, {ignoreMissing: true}],
-                          ]}
+                          [rehypeKatex, {
+                            errorColor: '#cc0000',
+                            onError: (error) => {
+                              console.error('KaTeX error:', error);
+                              return `<span>Error rendering formula</span>`;
+                            }
+                          }],
+                          [rehypePrism, { ignoreMissing: true }],
+                        ]}
+                        components={components}
+
                       >
                         {comment.content}
                       </ReactMarkdown>
