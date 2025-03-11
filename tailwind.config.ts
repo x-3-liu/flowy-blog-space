@@ -66,7 +66,10 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				brand: '#C15F3C',
+				'brand-secondary': '#B1ADA1',
+				'brand-bg': '#F4F3EE',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -120,6 +123,13 @@ export default {
 				DEFAULT: {
 					css: {
 						maxWidth: 'none',
+						color: 'hsl(var(--foreground))',
+						a: {
+							color: '#C15F3C',
+							'&:hover': {
+								color: 'color-mix(in srgb, #C15F3C, transparent 20%)',
+							},
+						},
 					},
 				},
 			},

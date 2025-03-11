@@ -31,32 +31,32 @@ const PostCard = ({ post, index = 0 }: PostCardProps) => {
       animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group p-6 rounded-2xl border border-border/50 hover:border-border",
+        "group p-6 rounded-2xl border border-brand-secondary/30 hover:border-brand/50",
         "bg-white/50 hover:bg-white transition-all duration-300",
         "transform hover:translate-y-[-2px] hover:shadow-lg"
       )}
     >
       <Link to={`/${post.slug}`} className="block space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            {format(post.createdAt, 'MMMM d, yyyy')}
+          <span className="text-xs font-medium text-brand-secondary">
+            {format(post.createdAt, 'yyyy年MM月dd日')}
           </span>
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-brand-secondary">
             {post.author}
           </span>
         </div>
         
-        <h2 className="text-xl md:text-2xl font-display font-semibold group-hover:text-primary transition-colors duration-300 text-balance">
+        <h2 className="text-xl md:text-2xl font-display font-semibold group-hover:text-brand transition-colors duration-300 text-balance">
           {post.title}
         </h2>
         
-        <p className="text-muted-foreground text-sm line-clamp-2 text-balance">
+        <p className="text-brand-secondary text-sm line-clamp-2 text-balance">
           {preview.replace(/[#*`]/g, '')}
         </p>
         
         <div className="pt-2">
-          <span className="text-xs font-medium text-primary/80 group-hover:text-primary transition-colors duration-300">
-            Read more
+          <span className="text-xs font-medium text-brand/80 group-hover:text-brand transition-colors duration-300">
+            查看详情
           </span>
         </div>
       </Link>
