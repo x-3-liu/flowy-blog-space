@@ -1,30 +1,140 @@
 
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { fetchPostBySlug } from '@/utils/supabasePostUtils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchPostBySlug, fetchComments, addComment, submitAbuseReport } from '@/utils/supabasePostUtils';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Flag } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from '@/components/ui/use-toast';
 
 const PostView = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [reportName, setReportName] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+
+  const [commentAuthor, setCommentAuthor] = useState('');
+  const [commentContent, setCommentContent] = useState('');
   
   const { 
     data: post, 
-    isLoading,
-    isError
+    isLoading: isPostLoading,
+    isError: isPostError
   } = useQuery({
     queryKey: ['post', slug],
     queryFn: () => fetchPostBySlug(slug || ''),
     enabled: !!slug,
   });
 
-  if (isLoading) {
+  const {
+    data: comments = [],
+    isLoading: isCommentsLoading
+  } = useQuery({
+    queryKey: ['comments', post?.id],
+    queryFn: () => fetchComments(post?.id || ''),
+    enabled: !!post?.id && !!post.commentsEnabled,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: (data: { postId: string; authorName: string; content: string }) => {
+      return addComment(data.postId, data.authorName, data.content);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', post?.id] });
+      setCommentAuthor('');
+      setCommentContent('');
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to add comment",
+        description: "There was an error posting your comment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const reportAbuseMutation = useMutation({
+    mutationFn: (data: { postId: string; reporterName: string; details: string }) => {
+      return submitAbuseReport(data.postId, data.reporterName, data.details);
+    },
+    onSuccess: () => {
+      setReportDialogOpen(false);
+      setReportName('');
+      setReportDetails('');
+      toast({
+        title: "Report submitted",
+        description: "Thank you for your report. We will review it shortly.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to submit report",
+        description: "There was an error submitting your report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentAuthor.trim() || !commentContent.trim()) {
+      toast({
+        title: "Both name and comment are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addCommentMutation.mutate({
+      postId: post?.id || '',
+      authorName: commentAuthor,
+      content: commentContent
+    });
+  };
+
+  const handleSubmitReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportName.trim() || !reportDetails.trim()) {
+      toast({
+        title: "Both name and details are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    reportAbuseMutation.mutate({
+      postId: post?.id || '',
+      reporterName: reportName,
+      details: reportDetails
+    });
+  };
+
+  if (isPostLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
         <Header />
@@ -43,7 +153,7 @@ const PostView = () => {
     );
   }
 
-  if (isError || !post) {
+  if (isPostError || !post) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
         <Header />
@@ -58,9 +168,24 @@ const PostView = () => {
     );
   }
 
+  if (post.banned) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
+        {post.showHeader && <Header />}
+        <div className="max-w-4xl mx-auto px-6 pt-28 pb-20 text-center">
+          <h1 className="text-3xl font-serif font-bold mb-6 text-brand">Content Unavailable</h1>
+          <p className="text-brand-secondary mb-8 font-serif">This post has been removed due to violations of community guidelines.</p>
+          <Button asChild className="bg-brand hover:bg-brand/90 font-serif">
+            <Link to="/">Return to Home</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/10 dark:from-background dark:to-background/80">
-      <Header />
+      {post.showHeader && <Header />}
       
       <main className="max-w-3xl mx-auto px-6 pt-28 pb-20">
         <Button 
@@ -120,7 +245,125 @@ const PostView = () => {
               </ReactMarkdown>
             </div>
           </motion.div>
+
+          {post.commentsEnabled && (
+            <div className="mt-12">
+              <h3 className="text-xl font-serif font-semibold mb-6 text-foreground">Comments</h3>
+              
+              <div className="space-y-8 mb-10">
+                {isCommentsLoading ? (
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-4 bg-brand-secondary/30 rounded w-1/4"></div>
+                    <div className="h-12 bg-brand-secondary/20 rounded"></div>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <p className="text-brand-secondary font-serif">No comments yet. Be the first to share your thoughts!</p>
+                ) : (
+                  comments.map((comment: any) => (
+                    <div key={comment.id} className="border-l-2 border-brand-secondary/20 pl-4 py-1">
+                      <div className="flex items-center mb-2">
+                        <span className="font-serif font-medium text-foreground">{comment.author_name}</span>
+                        <span className="ml-4 text-xs text-brand-secondary">
+                          {format(new Date(comment.created_at), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      <ReactMarkdown 
+                        className="markdown prose-sm max-w-none text-foreground font-serif"
+                        remarkPlugins={[remarkGfm]}
+                      >
+                        {comment.content}
+                      </ReactMarkdown>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <form onSubmit={handleSubmitComment} className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-6 rounded-xl">
+                <h4 className="text-lg font-serif font-medium mb-4 text-foreground">Add a comment</h4>
+                
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Your name"
+                    value={commentAuthor}
+                    onChange={(e) => setCommentAuthor(e.target.value)}
+                    className="font-serif"
+                  />
+                  
+                  <Textarea
+                    placeholder="Your comment (Markdown supported)"
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    rows={4}
+                    className="font-serif"
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="bg-brand hover:bg-brand/90 font-serif"
+                    disabled={addCommentMutation.isPending}
+                  >
+                    {addCommentMutation.isPending ? "Posting..." : "Post Comment"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
         </motion.article>
+
+        <div className="mt-16">
+          <Separator className="my-6" />
+          
+          <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center text-xs text-brand-secondary hover:text-brand transition-colors font-serif">
+                <Flag className="h-3 w-3 mr-1" />
+                Report abuse
+              </button>
+            </DialogTrigger>
+            
+            <DialogContent className="font-serif">
+              <DialogHeader>
+                <DialogTitle>Report Abuse</DialogTitle>
+                <DialogDescription>
+                  Please provide details about why you're reporting this content.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleSubmitReport} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <label htmlFor="reporter-name" className="text-sm">Your name</label>
+                  <Input
+                    id="reporter-name"
+                    value={reportName}
+                    onChange={(e) => setReportName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="report-details" className="text-sm">Details</label>
+                  <Textarea
+                    id="report-details"
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    placeholder="Please provide details about the issue"
+                    rows={4}
+                  />
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    type="submit" 
+                    className="bg-brand hover:bg-brand/90"
+                    disabled={reportAbuseMutation.isPending}
+                  >
+                    {reportAbuseMutation.isPending ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </main>
     </div>
   );

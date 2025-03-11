@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { addSupabasePost } from '@/utils/supabasePostUtils';
 import Header from '@/components/Header';
-import { Check, ArrowLeft } from 'lucide-react';
+import { Check, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import {
@@ -14,18 +14,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const NewPost = () => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState('public');
+  const [showHeader, setShowHeader] = useState(true);
+  const [commentsEnabled, setCommentsEnabled] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const { mutate: createPost, isPending: isSubmitting } = useMutation({
-    mutationFn: (postData: { title: string; author: string; content: string; showInFeed: boolean }) => {
+    mutationFn: (postData: { 
+      title: string; 
+      author: string; 
+      content: string; 
+      showInFeed: boolean;
+      showHeader: boolean;
+      commentsEnabled: boolean;
+    }) => {
       return addSupabasePost(postData);
     },
     onSuccess: (newPost) => {
@@ -86,25 +102,17 @@ const NewPost = () => {
       title, 
       author, 
       content, 
-      showInFeed: visibility === 'public' 
+      showInFeed: visibility === 'public',
+      showHeader,
+      commentsEnabled
     });
   };
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/10 dark:from-background dark:to-background/80">
-      <Header />
+      {showHeader && <Header />}
       
       <main className="max-w-4xl mx-auto px-6 pt-28 pb-20">
-        <div className="mb-8 flex items-center">
-          <button 
-            onClick={() => navigate(-1)}
-            className="mr-4 text-brand hover:text-brand/80 hover:bg-brand/5 flex items-center text-sm"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </button>
-        </div>
-        
         <motion.form 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -112,13 +120,36 @@ const NewPost = () => {
           onSubmit={handleSubmit} 
           className="space-y-8"
         >
-          <input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-4xl font-serif font-medium bg-transparent border-none focus:outline-none focus:ring-0 text-brand placeholder:text-brand/40"
-          />
+          <div className="flex items-center justify-between">
+            <input
+              type="text"
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full text-4xl font-serif font-medium bg-transparent border-none focus:outline-none focus:ring-0 text-brand placeholder:text-brand/40"
+            />
+            
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="ml-4 px-6 py-2 bg-brand text-white rounded-md hover:bg-brand/90 transition-colors font-serif flex items-center"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Publishing...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <Check className="mr-2 h-4 w-4" />
+                  Publish
+                </span>
+              )}
+            </button>
+          </div>
           
           <div className="flex items-center space-x-4">
             <input
@@ -128,6 +159,37 @@ const NewPost = () => {
               onChange={(e) => setAuthor(e.target.value)}
               className="flex-1 text-sm font-serif bg-transparent border-none focus:outline-none focus:ring-0 text-brand-secondary placeholder:text-brand-secondary/40"
             />
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="text-brand-secondary hover:text-brand font-serif text-sm bg-transparent border-none focus:outline-none focus:ring-0">
+                  <Settings className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 font-serif">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Advanced Settings</h4>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-header" className="text-sm">Show Header</Label>
+                    <Switch 
+                      id="show-header" 
+                      checked={showHeader} 
+                      onCheckedChange={setShowHeader} 
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="comments-enabled" className="text-sm">Enable Comments</Label>
+                    <Switch 
+                      id="comments-enabled" 
+                      checked={commentsEnabled} 
+                      onCheckedChange={setCommentsEnabled} 
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             
             <div className="w-2/10">
               <Select
@@ -151,29 +213,6 @@ const NewPost = () => {
             onChange={(e) => setContent(e.target.value)}
             className="w-full min-h-[calc(100vh-350px)] bg-transparent border-none focus:outline-none focus:ring-0 text-brand-secondary font-serif placeholder:text-brand-secondary/40 resize-none"
           />
-          
-          <div className="pt-4 flex justify-end">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-brand text-white rounded-md hover:bg-brand/90 transition-colors font-serif flex items-center"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Publishing...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <Check className="mr-2 h-4 w-4" />
-                  Publish
-                </span>
-              )}
-            </button>
-          </div>
         </motion.form>
       </main>
     </div>

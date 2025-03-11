@@ -9,30 +9,106 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      posts: {
+      abuse_reports: {
         Row: {
-          author: string
+          created_at: string
+          details: string
+          id: string
+          post_id: string
+          reporter_name: string
+        }
+        Insert: {
+          created_at?: string
+          details: string
+          id?: string
+          post_id: string
+          reporter_name: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          id?: string
+          post_id?: string
+          reporter_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abuse_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_name: string
           content: string
           created_at: string
           id: string
+          post_id: string
+        }
+        Insert: {
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author: string
+          banned: boolean
+          comments_enabled: boolean
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          show_header: boolean
           show_in_feed: boolean
           slug: string
           title: string
         }
         Insert: {
           author: string
+          banned?: boolean
+          comments_enabled?: boolean
           content: string
           created_at?: string
           id?: string
+          pinned?: boolean
+          show_header?: boolean
           show_in_feed?: boolean
           slug: string
           title: string
         }
         Update: {
           author?: string
+          banned?: boolean
+          comments_enabled?: boolean
           content?: string
           created_at?: string
           id?: string
+          pinned?: boolean
+          show_header?: boolean
           show_in_feed?: boolean
           slug?: string
           title?: string

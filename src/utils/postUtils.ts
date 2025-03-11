@@ -9,6 +9,10 @@ export interface Post {
   showInFeed: boolean;
   createdAt: Date;
   slug: string;
+  pinned?: boolean;
+  banned?: boolean;
+  showHeader?: boolean;
+  commentsEnabled?: boolean;
 }
 
 // Creates a slug from the title and date

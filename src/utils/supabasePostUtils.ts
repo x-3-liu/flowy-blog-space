@@ -10,9 +10,13 @@ export interface SupabasePost {
   show_in_feed: boolean;
   created_at: string;
   slug: string;
+  pinned: boolean;
+  banned: boolean;
+  show_header: boolean;
+  comments_enabled: boolean;
 }
 
-// 转换 Supabase 返回的数据格式为前端使用的格式
+// Transform Supabase data format to frontend format
 export const mapSupabasePost = (post: SupabasePost): Post => {
   return {
     id: post.id,
@@ -21,11 +25,15 @@ export const mapSupabasePost = (post: SupabasePost): Post => {
     content: post.content,
     showInFeed: post.show_in_feed,
     createdAt: new Date(post.created_at),
-    slug: post.slug
+    slug: post.slug,
+    pinned: post.pinned,
+    banned: post.banned,
+    showHeader: post.show_header,
+    commentsEnabled: post.comments_enabled
   };
 };
 
-// 获取所有文章
+// Fetch all posts
 export const fetchAllPosts = async (): Promise<Post[]> => {
   const { data, error } = await supabase
     .from('posts')
@@ -40,12 +48,14 @@ export const fetchAllPosts = async (): Promise<Post[]> => {
   return (data as SupabasePost[]).map(mapSupabasePost);
 };
 
-// 获取 feed 中的文章
+// Fetch feed posts
 export const fetchFeedPosts = async (): Promise<Post[]> => {
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('show_in_feed', true)
+    .eq('banned', false)
+    .order('pinned', { ascending: false })
     .order('created_at', { ascending: false });
   
   if (error) {
@@ -56,7 +66,7 @@ export const fetchFeedPosts = async (): Promise<Post[]> => {
   return (data as SupabasePost[]).map(mapSupabasePost);
 };
 
-// 通过 slug 获取文章
+// Fetch post by slug
 export const fetchPostBySlug = async (slug: string): Promise<Post | null> => {
   const { data, error } = await supabase
     .from('posts')
@@ -72,8 +82,8 @@ export const fetchPostBySlug = async (slug: string): Promise<Post | null> => {
   return mapSupabasePost(data as SupabasePost);
 };
 
-// 添加新文章
-export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slug'>): Promise<Post | null> => {
+// Add new post
+export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slug' | 'pinned' | 'banned'>): Promise<Post | null> => {
   const createdAt = new Date();
   const slug = createSlug(post.title, createdAt);
   
@@ -84,6 +94,8 @@ export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slu
       author: post.author,
       content: post.content,
       show_in_feed: post.showInFeed,
+      show_header: post.showHeader ?? true,
+      comments_enabled: post.commentsEnabled ?? false,
       slug
     }])
     .select()
@@ -97,38 +109,56 @@ export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slu
   return mapSupabasePost(data as SupabasePost);
 };
 
-// 迁移 localStorage 数据到 Supabase (仅在第一次运行时使用)
-export const migrateLocalStoragePosts = async (): Promise<boolean> => {
-  const localStoragePosts = localStorage.getItem('blog_posts');
+// Submit abuse report
+export const submitAbuseReport = async (postId: string, reporterName: string, details: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('abuse_reports')
+    .insert([{
+      post_id: postId,
+      reporter_name: reporterName,
+      details
+    }]);
   
-  if (!localStoragePosts) {
+  if (error) {
+    console.error('Error submitting abuse report:', error);
     return false;
   }
   
-  try {
-    const posts = JSON.parse(localStoragePosts);
-    
-    for (const post of posts) {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([{
-          title: post.title,
-          author: post.author,
-          content: post.content,
-          show_in_feed: post.showInFeed,
-          created_at: post.createdAt,
-          slug: post.slug
-        }])
-        .single();
-      
-      if (error && error.code !== '23505') { // Ignore unique violation errors (duplicate slugs)
-        console.error('Error migrating post:', error);
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error parsing localStorage posts:', error);
-    return false;
+  return true;
+};
+
+// Add comment to a post
+export const addComment = async (postId: string, authorName: string, content: string): Promise<any> => {
+  const { data, error } = await supabase
+    .from('comments')
+    .insert([{
+      post_id: postId,
+      author_name: authorName,
+      content
+    }])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error adding comment:', error);
+    return null;
   }
+  
+  return data;
+};
+
+// Fetch comments for a post
+export const fetchComments = async (postId: string): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
+  
+  return data;
 };
