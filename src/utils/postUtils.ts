@@ -17,23 +17,24 @@ export interface Post {
 
 // Creates a slug from the title and date
 export const createSlug = (title: string, date: Date): string => {
+  // 1. Replace whitespace with hyphens *first*.  This simplifies the regex.
+  let formattedTitle = title.replace(/\s+/g, '-');
+
   // Define a blacklist of characters to remove.  This includes most special
   // characters and emojis.  We *allow* Unicode characters (for Chinese,
-  // Japanese, Korean, etc.), spaces, and hyphens temporarily.  We'll
-  // handle spaces and multiple hyphens later.
-  const blacklistRegex = /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?`~₹€£¥₩\s\p{Emoji}]/gu;
+  // Japanese, Korean, etc.) and hyphens.  We'll handle multiple hyphens later.
+  //  Note: The \s (whitespace) is no longer needed in the blacklist.
+  const blacklistRegex = /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?`~₹€£¥₩\p{Emoji}]/gu;
 
-  // 1. Remove blacklisted characters.
-  let formattedTitle = title.replace(blacklistRegex, '');
+  // 2. Remove blacklisted characters.
+  formattedTitle = formattedTitle.replace(blacklistRegex, '');
 
-  // 2. Replace remaining whitespace (if any made it through) with hyphens.
-  formattedTitle = formattedTitle.replace(/\s+/g, '-');
 
   // 3. Collapse multiple hyphens into a single hyphen.
   formattedTitle = formattedTitle.replace(/-+/g, '-');
-    
-    // 4. remove leading and trailing hyphens
-    formattedTitle = formattedTitle.replace(/^-+|-+$/g, '');
+
+  // 4. Remove leading and trailing hyphens
+  formattedTitle = formattedTitle.replace(/^-+|-+$/g, '');
 
   const day = format(date, 'dd');
   const month = format(date, 'MM');
