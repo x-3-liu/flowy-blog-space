@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchPostBySlug, fetchComments, addComment, submitAbuseReport } from '@/utils/supabasePostUtils';
@@ -55,6 +55,12 @@ const PostView = () => {
     queryFn: () => fetchComments(post?.id || ''),
     enabled: !!post?.id && !!post.commentsEnabled,
   });
+
+  useEffect(() => {
+    if (post && !isPostLoading && !isPostError) {
+      document.title = `${post.title} - Flowy`;
+    }
+  }, [post, isPostLoading, isPostError]);
 
   const addCommentMutation = useMutation({
     mutationFn: (data: { postId: string; authorName: string; content: string }) => {

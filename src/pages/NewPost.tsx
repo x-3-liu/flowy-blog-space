@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { addSupabasePost } from '@/utils/supabasePostUtils';
@@ -32,6 +32,10 @@ const NewPost = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    document.title = 'New Post - Flowy';
+  }, []);
   
   const { mutate: createPost, isPending: isSubmitting } = useMutation({
     mutationFn: (postData: { 
