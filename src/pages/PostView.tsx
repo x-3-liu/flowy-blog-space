@@ -25,6 +25,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/components/ui/use-toast';
 import remarkBreaks from 'remark-breaks';
+import remarkEmoji from 'remark-emoji';  // Import remark-emoji
+import rehypePrism from 'rehype-prism-plus'; // Import rehype-prism-plus
+import 'katex/dist/katex.min.css'; //  KaTeX CSS
+// import 'prismjs/themes/prism-tomorrow.css'; //  Prism.js theme (choose a theme you like)
 
 const PostView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -246,19 +250,22 @@ const PostView = () => {
           >
             <div className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-8 rounded-2xl">
               <ReactMarkdown
-                className="markdown prose-lg max-w-none text-foreground font-serif"
-                remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                rehypePlugins={[
-                  [rehypeKatex, {
-                    errorColor: '#cc0000', // Optional: Customize error color
-                    onError: (error) => {
-                      console.error('KaTeX error:', error);
-                      return `<span>Error rendering formula</span>`;
-                    }
-                  }]
-                ]}
+                  className="markdown prose-lg max-w-none text-foreground font-serif"
+                  remarkPlugins={[
+                      remarkGfm,
+                      remarkBreaks,
+                      remarkMath,
+                      remarkEmoji,
+                  ]}
+                  rehypePlugins={[
+                      [rehypeKatex, { /* ... */ }],
+                      [rehypePrism, {
+                          theme: 'tomorrow',
+                          ignoreMissing: true
+                      }],
+                  ]}
               >
-                {post.content}
+                  {post.content}
               </ReactMarkdown>
             </div>
           </motion.div>
@@ -286,7 +293,7 @@ const PostView = () => {
                       </div>
                       <ReactMarkdown
                         className="markdown prose-sm max-w-none text-foreground font-serif"
-                        remarkPlugins={[remarkGfm, remarkMath]}
+                        remarkPlugins={[remarkGfm, remarkMath, remarkEmoji, remarkMermaid]}
                         rehypePlugins={[
                             [rehypeKatex, {
                               errorColor: '#cc0000',
@@ -294,7 +301,8 @@ const PostView = () => {
                                 console.error('KaTeX error:', error);
                                 return `<span>Error rendering formula</span>`;
                               }
-                            }]
+                            }],
+                            [rehypePrism, {ignoreMissing: true}],
                           ]}
                       >
                         {comment.content}
