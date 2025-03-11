@@ -215,7 +215,7 @@ const NewPost = () => {
             placeholder="Write here..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full min-h-[calc(100vh-350px)] bg-transparent border-none focus:outline-none focus:ring-0 text-brand-secondary font-serif placeholder:text-brand-secondary/40 resize-none"
+            className="w-full min-h-[calc(100vh-350px)] bg-transparent border-none focus:outline-none focus:ring-0 font-serif placeholder:text-brand-secondary/40 resize-none"
           />
         </motion.form>
       </main>

@@ -24,6 +24,7 @@ const Index = () => {
   });
 
   useEffect(() => {
+    document.title = 'Flowy';
     // Animation for page load
     const onLoad = async () => {
       document.body.style.opacity = '0';
