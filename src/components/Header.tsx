@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PenLine } from 'lucide-react';
 
+import 'katex/dist/katex.min.css';
+
 const Header = () => {
   const location = useLocation();
   

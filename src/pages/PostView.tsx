@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +8,8 @@ import { ArrowLeft, Calendar, User, Flag } from 'lucide-react';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math'; // Import remark-math
+import rehypeKatex from 'rehype-katex'; // Import rehype-katex
 import { motion } from 'framer-motion';
 import {
   Dialog,
@@ -30,16 +31,16 @@ const PostView = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [reportName, setReportName] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentContent, setCommentContent] = useState('');
-  
-  const { 
-    data: post, 
+
+  const {
+    data: post,
     isLoading: isPostLoading,
     isError: isPostError
   } = useQuery({
@@ -193,18 +194,18 @@ const PostView = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/10 dark:from-background dark:to-background/80">
       {post.showHeader && <Header />}
-      
+
       <main className="max-w-3xl mx-auto px-6 pt-28 pb-20">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigate('/')}
           className="mb-8 group text-brand hover:text-brand/80 hover:bg-brand/5 font-serif"
         >
           <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Back to Home
         </Button>
-        
+
         <motion.article
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -219,7 +220,7 @@ const PostView = () => {
           >
             {post.title}
           </motion.h1>
-          
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -230,13 +231,13 @@ const PostView = () => {
               <User className="h-4 w-4 mr-2 opacity-70" />
               <span>{post.author}</span>
             </div>
-            
+
             <div className="flex items-center">
               <Calendar className="h-4 w-4 mr-2 opacity-70" />
               <span>{format(post.createdAt, 'MMMM d, yyyy')}</span>
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -244,9 +245,18 @@ const PostView = () => {
             className="pt-6"
           >
             <div className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-8 rounded-2xl">
-              <ReactMarkdown 
+              <ReactMarkdown
                 className="markdown prose-lg max-w-none text-foreground font-serif"
-                remarkPlugins={[remarkGfm, remarkBreaks]}
+                remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+                rehypePlugins={[
+                  [rehypeKatex, {
+                    errorColor: '#cc0000', // Optional: Customize error color
+                    onError: (error) => {
+                      console.error('KaTeX error:', error);
+                      return `<span>Error rendering formula</span>`;
+                    }
+                  }]
+                ]}
               >
                 {post.content}
               </ReactMarkdown>
@@ -256,7 +266,7 @@ const PostView = () => {
           {post.commentsEnabled && (
             <div className="mt-12">
               <h3 className="text-xl font-serif font-semibold mb-6 text-foreground">Comments</h3>
-              
+
               <div className="space-y-8 mb-10">
                 {isCommentsLoading ? (
                   <div className="animate-pulse space-y-4">
@@ -274,9 +284,18 @@ const PostView = () => {
                           {format(new Date(comment.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
-                      <ReactMarkdown 
+                      <ReactMarkdown
                         className="markdown prose-sm max-w-none text-foreground font-serif"
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[
+                            [rehypeKatex, {
+                              errorColor: '#cc0000',
+                              onError: (error) => {
+                                console.error('KaTeX error:', error);
+                                return `<span>Error rendering formula</span>`;
+                              }
+                            }]
+                          ]}
                       >
                         {comment.content}
                       </ReactMarkdown>
@@ -284,10 +303,10 @@ const PostView = () => {
                   ))
                 )}
               </div>
-              
+
               <form onSubmit={handleSubmitComment} className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-6 rounded-xl">
                 <h4 className="text-lg font-serif font-medium mb-4 text-foreground">Add a comment</h4>
-                
+
                 <div className="space-y-4">
                   <Input
                     placeholder="Your name"
@@ -295,7 +314,7 @@ const PostView = () => {
                     onChange={(e) => setCommentAuthor(e.target.value)}
                     className="font-serif"
                   />
-                  
+
                   <Textarea
                     placeholder="Your comment (Markdown supported)"
                     value={commentContent}
@@ -303,9 +322,9 @@ const PostView = () => {
                     rows={4}
                     className="font-serif"
                   />
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="bg-brand hover:bg-brand/90 font-serif"
                     disabled={addCommentMutation.isPending}
                   >
@@ -319,7 +338,7 @@ const PostView = () => {
 
         <div className="mt-16">
           <Separator className="my-6" />
-          
+
           <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
             <DialogTrigger asChild>
               <button className="flex items-center text-xs text-brand-secondary hover:text-brand transition-colors font-serif">
@@ -327,7 +346,7 @@ const PostView = () => {
                 Report abuse
               </button>
             </DialogTrigger>
-            
+
             <DialogContent className="font-serif">
               <DialogHeader>
                 <DialogTitle>Report Abuse</DialogTitle>
@@ -335,7 +354,7 @@ const PostView = () => {
                   Please provide details about why you're reporting this content.
                 </DialogDescription>
               </DialogHeader>
-              
+
               <form onSubmit={handleSubmitReport} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <label htmlFor="reporter-name" className="text-sm">Your name</label>
@@ -346,7 +365,7 @@ const PostView = () => {
                     placeholder="Your name"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="report-details" className="text-sm">Details</label>
                   <Textarea
@@ -357,10 +376,10 @@ const PostView = () => {
                     rows={4}
                   />
                 </div>
-                
+
                 <DialogFooter>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-brand hover:bg-brand/90"
                     disabled={reportAbuseMutation.isPending}
                   >
