@@ -27,3 +27,5 @@ package-lock.json
 bund.lock
 yarn.lock
 pnpm-lock.yaml
+
+.env
