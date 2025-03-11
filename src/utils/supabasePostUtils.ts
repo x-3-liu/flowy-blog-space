@@ -85,28 +85,49 @@ export const fetchPostBySlug = async (slug: string): Promise<Post | null> => {
 // Add new post
 export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slug' | 'pinned' | 'banned'>): Promise<Post | null> => {
   const createdAt = new Date();
-  const slug = createSlug(post.title, createdAt);
-  
-  const { data, error } = await supabase
-    .from('posts')
-    .insert([{
-      title: post.title,
-      author: post.author,
-      content: post.content,
-      show_in_feed: post.showInFeed,
-      show_header: post.showHeader ?? true,
-      comments_enabled: post.commentsEnabled ?? false,
-      slug
-    }])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error adding post:', error);
-    return null;
+  const initialSlug = createSlug(post.title, createdAt);
+
+  const tryInsert = async (slug: string) => {
+    const { data, error } = await supabase
+      .from('posts')
+      .insert([{
+        title: post.title,
+        author: post.author,
+        content: post.content,
+        show_in_feed: post.showInFeed,
+        show_header: post.showHeader ?? true,
+        comments_enabled: post.commentsEnabled ?? false,
+        slug
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, error };
+    }
+    return { data: data as SupabasePost, error: null };
   }
-  
-  return mapSupabasePost(data as SupabasePost);
+
+
+  let currentSlug = initialSlug;
+  let result = await tryInsert(currentSlug);
+
+  while (result.error) {
+      const randomNumber = Math.floor(Math.random() * 90 + 10); // Generates a random number between 10 and 99
+      currentSlug = `${initialSlug}-${randomNumber}`;
+      result = await tryInsert(currentSlug);
+      if(!result.error){
+        break;
+      }
+  }
+
+    if(result.error){
+        console.error('Error adding post:', result.error);
+        return null;
+    }
+
+
+  return mapSupabasePost(result.data);
 };
 
 // Submit abuse report

@@ -17,30 +17,29 @@ export interface Post {
 
 // Creates a slug from the title and date
 export const createSlug = (title: string, date: Date): string => {
-  const formattedTitle = title
-    .replace(/[^\w\s]/gi, '') // Remove special characters
-    .replace(/\s+/g, '-'); // Replace spaces with hyphens
-  
+  // Define a blacklist of characters to remove.  This includes most special
+  // characters and emojis.  We *allow* Unicode characters (for Chinese,
+  // Japanese, Korean, etc.), spaces, and hyphens temporarily.  We'll
+  // handle spaces and multiple hyphens later.
+  const blacklistRegex = /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?`~₹€£¥₩\s\p{Emoji}]/gu;
+
+  // 1. Remove blacklisted characters.
+  let formattedTitle = title.replace(blacklistRegex, '');
+
+  // 2. Replace remaining whitespace (if any made it through) with hyphens.
+  formattedTitle = formattedTitle.replace(/\s+/g, '-');
+
+  // 3. Collapse multiple hyphens into a single hyphen.
+  formattedTitle = formattedTitle.replace(/-+/g, '-');
+    
+    // 4. remove leading and trailing hyphens
+    formattedTitle = formattedTitle.replace(/^-+|-+$/g, '');
+
   const day = format(date, 'dd');
   const month = format(date, 'MM');
   const year = format(date, 'yyyy');
-  
-  return `${formattedTitle}-${day}-${month}-${year}`;
-};
 
-// Parse a slug to extract information
-export const parseSlug = (slug: string): { title: string; day: string; month: string; year: string } | null => {
-  const regex = /^(.+)-(\d{2})-(\d{2})-(\d{4})$/;
-  const match = slug.match(regex);
-  
-  if (!match) return null;
-  
-  return {
-    title: match[1].replace(/-/g, ' '),
-    day: match[2],
-    month: match[3],
-    year: match[4]
-  };
+  return `${formattedTitle}-${day}-${month}-${year}`;
 };
 
 // Store posts in localStorage
