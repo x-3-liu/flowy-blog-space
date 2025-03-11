@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/components/ui/use-toast';
+import remarkBreaks from 'remark-breaks';
 
 const PostView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -245,7 +246,7 @@ const PostView = () => {
             <div className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-8 rounded-2xl">
               <ReactMarkdown 
                 className="markdown prose-lg max-w-none text-foreground font-serif"
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkBreaks]}
               >
                 {post.content}
               </ReactMarkdown>

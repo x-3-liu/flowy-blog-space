@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Post, createSlug } from "./postUtils";
+import DOMPurify from 'dompurify';
 
 export interface SupabasePost {
   id: string;
@@ -84,8 +85,17 @@ export const fetchPostBySlug = async (slug: string): Promise<Post | null> => {
 
 // Add new post
 export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slug' | 'pinned' | 'banned'>): Promise<Post | null> => {
+  const MAX_RETRIES = 5;
   const createdAt = new Date();
   const initialSlug = createSlug(post.title, createdAt);
+
+  // Sanitize and transform content
+  const sanitizedContent = DOMPurify.sanitize(post.content, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre', 'img'], // Add more tags as needed
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title'], // Allowed attributes
+  });
+  const transformedContent = sanitizedContent;
+
 
   const tryInsert = async (slug: string) => {
     const { data, error } = await supabase
@@ -93,7 +103,7 @@ export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slu
       .insert([{
         title: post.title,
         author: post.author,
-        content: post.content,
+        content: transformedContent, // Use the transformed content
         show_in_feed: post.showInFeed,
         show_header: post.showHeader ?? true,
         comments_enabled: post.commentsEnabled ?? false,
@@ -111,20 +121,25 @@ export const addSupabasePost = async (post: Omit<Post, 'id' | 'createdAt' | 'slu
 
   let currentSlug = initialSlug;
   let result = await tryInsert(currentSlug);
+  let retries = 0;
 
-  while (result.error) {
+  while (result.error && retries < MAX_RETRIES) {
+    // Only retry if the error message indicates a slug conflict (unique constraint violation)
+    if (result.error.message.includes('duplicate key value violates unique constraint') && result.error.message.includes('slug')) {
       const randomNumber = Math.floor(Math.random() * 90 + 10); // Generates a random number between 10 and 99
       currentSlug = `${initialSlug}-${randomNumber}`;
       result = await tryInsert(currentSlug);
-      if(!result.error){
-        break;
-      }
+      retries++;
+    } else {
+      // If it's a different error, don't retry
+      break;
+    }
   }
 
-    if(result.error){
-        console.error('Error adding post:', result.error);
-        return null;
-    }
+  if (result.error) {
+    console.error('Error adding post:', result.error);
+    return null;
+  }
 
 
   return mapSupabasePost(result.data);
