@@ -13,7 +13,7 @@ const Header = () => {
         <div className="flex items-center space-x-6">
           <Link 
             to="/" 
-            className="text-xl font-display font-medium tracking-tight text-brand hover:opacity-80 transition-opacity"
+            className="text-xl font-serif font-medium tracking-tight text-brand hover:opacity-80 transition-opacity"
           >
             Flowy
           </Link>
@@ -22,20 +22,20 @@ const Header = () => {
             <Link 
               to="/" 
               className={cn(
-                "text-sm font-medium transition-colors hover:text-brand/80",
+                "text-sm font-serif transition-colors hover:text-brand/80",
                 location.pathname === "/" ? "text-brand" : "text-brand-secondary"
               )}
             >
-              首页
+              Home
             </Link>
           </nav>
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button asChild size="sm" className="rounded-full px-4 group bg-brand hover:bg-brand/90">
+          <Button asChild size="sm" className="rounded-full px-4 group bg-brand hover:bg-brand/90 font-serif">
             <Link to="/new" className="flex items-center space-x-2">
               <PenLine className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span>写文章</span>
+              <span>Write</span>
             </Link>
           </Button>
         </div>

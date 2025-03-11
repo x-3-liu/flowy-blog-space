@@ -21,7 +21,11 @@ export default {
 		extend: {
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
-				display: ['SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
+				serif: ['Playfair Display', 'Georgia', 'serif'],
+				display: ['Playfair Display', 'Georgia', 'serif'],
+			},
+			width: {
+				'2/10': '20%',
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -130,6 +134,7 @@ export default {
 								color: 'color-mix(in srgb, #C15F3C, transparent 20%)',
 							},
 						},
+						fontFamily: 'Playfair Display, Georgia, serif',
 					},
 				},
 			},

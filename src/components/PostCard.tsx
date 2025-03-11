@@ -38,25 +38,25 @@ const PostCard = ({ post, index = 0 }: PostCardProps) => {
     >
       <Link to={`/${post.slug}`} className="block space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-brand-secondary">
-            {format(post.createdAt, 'yyyy年MM月dd日')}
+          <span className="text-xs font-serif text-brand-secondary">
+            {format(post.createdAt, 'MMMM d, yyyy')}
           </span>
-          <span className="text-xs font-medium text-brand-secondary">
+          <span className="text-xs font-serif text-brand-secondary">
             {post.author}
           </span>
         </div>
         
-        <h2 className="text-xl md:text-2xl font-display font-semibold group-hover:text-brand transition-colors duration-300 text-balance">
+        <h2 className="text-xl md:text-2xl font-serif font-semibold group-hover:text-brand transition-colors duration-300 text-balance">
           {post.title}
         </h2>
         
-        <p className="text-brand-secondary text-sm line-clamp-2 text-balance">
+        <p className="text-brand-secondary text-sm line-clamp-2 text-balance font-serif">
           {preview.replace(/[#*`]/g, '')}
         </p>
         
         <div className="pt-2">
-          <span className="text-xs font-medium text-brand/80 group-hover:text-brand transition-colors duration-300">
-            查看详情
+          <span className="text-xs font-serif text-brand/80 group-hover:text-brand transition-colors duration-300">
+            Read more
           </span>
         </div>
       </Link>

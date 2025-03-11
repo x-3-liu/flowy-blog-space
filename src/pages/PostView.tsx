@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPostBySlug } from '@/utils/supabasePostUtils';
@@ -25,24 +24,6 @@ const PostView = () => {
     enabled: !!slug,
   });
 
-  useEffect(() => {
-    // Animation for page load
-    const onLoad = async () => {
-      document.body.style.opacity = '0';
-      await new Promise(resolve => setTimeout(resolve, 50));
-      document.body.style.opacity = '1';
-      document.body.style.transition = 'opacity 0.5s ease-in-out';
-    };
-    
-    onLoad();
-    
-    // Cleanup
-    return () => {
-      document.body.style.opacity = '';
-      document.body.style.transition = '';
-    };
-  }, []);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
@@ -67,10 +48,10 @@ const PostView = () => {
       <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
         <Header />
         <div className="max-w-4xl mx-auto px-6 pt-28 pb-20 text-center">
-          <h1 className="text-3xl font-display font-bold mb-6 text-brand">文章未找到</h1>
-          <p className="text-brand-secondary mb-8">您查找的文章不存在或已被移除。</p>
-          <Button asChild className="bg-brand hover:bg-brand/90">
-            <Link to="/">返回首页</Link>
+          <h1 className="text-3xl font-serif font-bold mb-6 text-brand">Post not found</h1>
+          <p className="text-brand-secondary mb-8 font-serif">The post you're looking for doesn't exist or has been removed.</p>
+          <Button asChild className="bg-brand hover:bg-brand/90 font-serif">
+            <Link to="/">Return to Home</Link>
           </Button>
         </div>
       </div>
@@ -78,7 +59,7 @@ const PostView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20 dark:from-background dark:to-background/80">
+    <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/10 dark:from-background dark:to-background/80">
       <Header />
       
       <main className="max-w-3xl mx-auto px-6 pt-28 pb-20">
@@ -86,10 +67,10 @@ const PostView = () => {
           variant="ghost" 
           size="sm" 
           onClick={() => navigate('/')}
-          className="mb-8 group text-brand hover:text-brand/80 hover:bg-brand/5"
+          className="mb-8 group text-brand hover:text-brand/80 hover:bg-brand/5 font-serif"
         >
           <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          返回首页
+          Back to Home
         </Button>
         
         <motion.article
@@ -102,7 +83,7 @@ const PostView = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-balance text-brand"
+            className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold text-balance text-foreground"
           >
             {post.title}
           </motion.h1>
@@ -111,7 +92,7 @@ const PostView = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-wrap items-center gap-4 text-sm text-brand-secondary"
+            className="flex flex-wrap items-center gap-4 text-sm text-brand-secondary font-serif"
           >
             <div className="flex items-center">
               <User className="h-4 w-4 mr-2 opacity-70" />
@@ -120,7 +101,7 @@ const PostView = () => {
             
             <div className="flex items-center">
               <Calendar className="h-4 w-4 mr-2 opacity-70" />
-              <span>{format(post.createdAt, 'yyyy年MM月dd日')}</span>
+              <span>{format(post.createdAt, 'MMMM d, yyyy')}</span>
             </div>
           </motion.div>
           
@@ -132,7 +113,7 @@ const PostView = () => {
           >
             <div className="bg-white/70 dark:bg-black/70 backdrop-blur-md border border-brand-secondary/20 dark:border-black/20 p-8 rounded-2xl">
               <ReactMarkdown 
-                className="markdown prose-lg max-w-none"
+                className="markdown prose-lg max-w-none text-foreground font-serif"
                 remarkPlugins={[remarkGfm]}
               >
                 {post.content}
