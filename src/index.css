@@ -128,9 +128,9 @@
     @apply border-l-4 border-muted-foreground/30 pl-4 italic text-muted-foreground my-6 font-serif;
   }
   
-  .markdown pre {
+  /* .markdown pre {
     @apply bg-muted p-4 rounded-md overflow-x-auto mb-6 font-mono;
-  }
+  } */
   
   .markdown code {
     @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;

@@ -26,10 +26,62 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/components/ui/use-toast';
 import remarkBreaks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
-import rehypePrism from 'rehype-prism-plus';
 import 'katex/dist/katex.min.css';
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+// highlight.js imports
+import hljs from 'highlight.js/lib/common'; // Import the core library + common languages
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml'; // for HTML
+import css from 'highlight.js/lib/languages/css';
+import python from 'highlight.js/lib/languages/python';
+import java from 'highlight.js/lib/languages/java';
+import c from 'highlight.js/lib/languages/c';
+import cpp from 'highlight.js/lib/languages/cpp';
+import csharp from 'highlight.js/lib/languages/csharp'; //C#
+import go from 'highlight.js/lib/languages/go';
+import rust from 'highlight.js/lib/languages/rust';
+import php from 'highlight.js/lib/languages/php';
+import ruby from 'highlight.js/lib/languages/ruby';
+import swift from 'highlight.js/lib/languages/swift';
+import kotlin from 'highlight.js/lib/languages/kotlin';
+import json from 'highlight.js/lib/languages/json';
+import sql from 'highlight.js/lib/languages/sql';
+import markdown from 'highlight.js/lib/languages/markdown';
+import yaml from 'highlight.js/lib/languages/yaml';
+import bash from 'highlight.js/lib/languages/bash';
+//import shell from 'highlight.js/lib/languages/shell'; //shell == bash
+import powershell from 'highlight.js/lib/languages/powershell';
+
+import 'highlight.js/styles/github-dark.css'; // Import a stylesheet (choose your favorite)
+
+
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('xml', xml); // Use 'xml' for HTML
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('c', c);
+hljs.registerLanguage('cpp', cpp);
+hljs.registerLanguage('csharp', csharp);
+hljs.registerLanguage('go', go);
+hljs.registerLanguage('rust', rust);
+hljs.registerLanguage('php', php);
+hljs.registerLanguage('ruby', ruby);
+hljs.registerLanguage('swift', swift);
+hljs.registerLanguage('kotlin', kotlin);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('markdown', markdown);
+hljs.registerLanguage('yaml', yaml);
+hljs.registerLanguage('bash', bash);
+//hljs.registerLanguage('shell', shell);
+hljs.registerLanguage('powershell', powershell);
+
+
+
 
 const PostView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -46,7 +98,74 @@ const PostView = () => {
 
   const [copyStates, setCopyStates] = useState<{ [key: string]: boolean }>({});
 
-  const {
+    const renderCode = useCallback((code: string, language: string) => {
+        if (language && hljs.getLanguage(language)) {
+            try {
+                return hljs.highlight(code, { language }).value;
+            } catch (err) {
+                console.error("Highlighting failed:", err);
+            }
+        }
+        return code.replace(/</g, "<").replace(/>/g, ">"); // Always escape
+    }, []);
+
+    const components = {
+      code: ({ node, inline, className, children, ...props }: any) => {
+        const match = /language-(\w+)/.exec(className || '');
+        const lang = match && match[1] ? match[1] : '';
+        const codeId = `code-${Math.random().toString(36).substring(7)}`;
+        const hasCopied = copyStates[codeId];
+        const codeText = String(children).replace(/\n$/, '');
+
+
+        if (match) { // If there's a language class, it's a code block
+            return (
+                <div className="relative bg-gray-800 dark:bg-gray-900 rounded-md my-4 overflow-hidden font-mono text-sm !my-0">
+                    <div className="flex items-center justify-end absolute top-0 right-0 p-2 !my-0">
+                        {lang && (
+                            <span className="text-brand-secondary text-xs mr-2 font-mono uppercase !my-0">{lang}</span>
+                        )}
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleCopyClick(codeText, codeId)}
+                                        className="text-brand-secondary hover:text-brand"
+                                    >
+                                        {hasCopied ? (
+                                            <span className="text-xs">Copied!</span>
+                                        ) : (
+                                            <Copy className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{hasCopied ? "Copied!" : "Copy to Clipboard"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <div
+                        className="p-4 mt-0 rounded-md !my-0"
+                        dangerouslySetInnerHTML={{ __html: renderCode(codeText, lang) }}
+                    />
+                </div>
+            );
+        }
+
+        // Inline code:  No language class
+        return (
+            <code className="bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                {children}
+            </code>
+        );
+    },
+  };
+
+
+    const {
     data: post,
     isLoading: isPostLoading,
     isError: isPostError
@@ -165,69 +284,6 @@ const PostView = () => {
     });
   }, [toast]);
 
-    const components = {
-        code: ({ node, inline, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            const lang = match && match[1] ? match[1] : '';
-            const codeId = `code-${Math.random().toString(36).substring(7)}`;
-            const hasCopied = copyStates[codeId];
-
-            if (!inline) {
-                return (
-                    <div className="relative bg-white/80 dark:bg-black/90 rounded-md my-4 overflow-hidden font-mono text-sm">
-                        <div className="flex items-center justify-end absolute top-0 right-0 p-2">
-                            {lang && (
-                                <span className="text-brand-secondary text-xs mr-2 font-mono uppercase">{lang}</span>
-                            )}
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleCopyClick(String(children).replace(/\n$/, ''), codeId)}
-                                            className="text-brand-secondary hover:text-brand"
-                                        >
-                                            {hasCopied ? (
-                                                <span className="text-xs">Copied!</span>
-                                            ) : (
-                                                <Copy className="h-4 w-4" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{hasCopied ? "Copied!" : "Copy to Clipboard"}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                        {/* Directly modify the existing pre tag */}
-                        <pre
-                            {...props} // Spread all props from rehype-prism-plus
-                            className={cn(
-                                "p-4 mt-0 rounded-md",
-                                className,
-                                "bg-transparent !important", // Override background
-                                "text-foreground !important"  // Override text color
-                            )}
-                        >
-                            <code className={className}>{children}</code>
-                        </pre>
-                    </div>
-                );
-            }
-
-            // Inline code (no change needed)
-            return (
-                <code className={className} {...props}>
-                    {children}
-                </code>
-            );
-        },
-    };
-
-
-
   if (isPostLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-brand-bg to-brand-secondary/20">
@@ -341,10 +397,10 @@ const PostView = () => {
                 ]}
                 rehypePlugins={[
                   [rehypeKatex, { /* ... */ }],
-                  [rehypePrism, {
-                    theme: 'tomorrow',
-                    ignoreMissing: true
-                  }],
+                  //[rehypePrism, {  // Remove rehype-prism
+                  //  theme: 'tomorrow',
+                  //  ignoreMissing: true
+                  //}],
                 ]}
                 components={components}
               >
@@ -385,7 +441,7 @@ const PostView = () => {
                               return `<span>Error rendering formula</span>`;
                             }
                           }],
-                          [rehypePrism, { ignoreMissing: true }],
+                          //[rehypePrism, { ignoreMissing: true }], // Remove rehype-prism
                         ]}
                         components={components}
 
